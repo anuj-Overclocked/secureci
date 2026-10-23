@@ -5,350 +5,269 @@ import time
 import webbrowser
 
 
-PROJECT_DIRECTORY = os.path.dirname(
-    os.path.abspath(__file__)
-)
-
+SECURECI_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 DASHBOARD_URL = "http://127.0.0.1:5000"
 
 
+def get_python_executable():
+    """Return the Python executable from the project venv if available, else sys.executable."""
+    candidates = [
+        os.path.join(SECURECI_DIRECTORY, "venv", "Scripts", "python.exe"),
+        os.path.join(SECURECI_DIRECTORY, "venv", "bin", "python"),
+    ]
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+    return sys.executable
+
+
 def print_banner():
-
     print()
-    print("==============================================")
-    print("              SECURECI")
-    print("       DevSecOps Security Scanner")
-    print("==============================================")
+    print("=" * 60)
+    print("                    SECURECI")
+    print("             DevSecOps Security Scanner")
+    print("=" * 60)
     print()
 
 
-def check_git_repository():
+def check_scanner_files():
+    required_files = [
+        "local_scanner.py",
+        "github_scanner.py",
+        "app/app.py",
+    ]
 
-    git_directory = os.path.join(
-        PROJECT_DIRECTORY,
-        ".git"
-    )
+    missing_files = []
 
-    return os.path.exists(git_directory)
-
-
-def get_git_remote():
-
-    try:
-
-        result = subprocess.run(
-            [
-                "git",
-                "config",
-                "--get",
-                "remote.origin.url"
-            ],
-            cwd=PROJECT_DIRECTORY,
-            capture_output=True,
-            text=True
+    for file_name in required_files:
+        file_path = os.path.join(
+            SECURECI_DIRECTORY,
+            file_name
         )
 
-        remote_url = result.stdout.strip()
+        if not os.path.exists(file_path):
+            missing_files.append(file_name)
 
-        if not remote_url:
-            return None
+    if missing_files:
+        print()
+        print("ERROR: Required SecureCI files are missing.")
+        print()
 
-        # Convert GitHub SSH URL to HTTPS
-        if remote_url.startswith("git@github.com:"):
+        for file_name in missing_files:
+            print("Missing:", file_name)
 
-            remote_url = remote_url.replace(
-                "git@github.com:",
-                "https://github.com/"
-            )
+        return False
 
-        # Remove .git from the end
-        if remote_url.endswith(".git"):
+    return True
 
-            remote_url = remote_url[:-4]
 
-        return remote_url
+def get_project_path():
+    print("----------------------------------------------")
+    print("STEP 1 - SELECT LOCAL PROJECT")
+    print("----------------------------------------------")
+    print()
 
-    except Exception:
+    project_path = input(
+        "Enter local project path: "
+    ).strip().strip('"')
 
+    if not project_path:
+        print()
+        print("ERROR: Project path is required.")
         return None
 
+    project_path = os.path.abspath(project_path)
 
-def run_security_scan(repository_url):
+    if not os.path.exists(project_path):
+        print()
+        print("ERROR: Project path does not exist.")
+        print(project_path)
+        return None
 
+    if not os.path.isdir(project_path):
+        print()
+        print("ERROR: The given path is not a folder.")
+        return None
+
+    print()
+    print("Project selected:")
+    print(project_path)
+
+    return project_path
+
+
+def run_local_scan(project_path):
     print()
     print("----------------------------------------------")
-    print("STEP 1 — SECURITY SCAN")
+    print("STEP 2 - SECURITY SCAN")
     print("----------------------------------------------")
-
     print()
-    print("Repository detected:")
-    print(repository_url)
 
+    print("Scanning local project:")
+    print(project_path)
     print()
-    print("Starting security scanners...")
+
+    print("Starting SecureCI scanners...")
     print()
 
     scanner_file = os.path.join(
-        PROJECT_DIRECTORY,
-        "github_scanner.py"
+        SECURECI_DIRECTORY,
+        "local_scanner.py"
     )
 
-    if not os.path.exists(scanner_file):
-
-        print()
-        print("ERROR:")
-        print("github_scanner.py was not found.")
-
-        return 1
+    py_exe = get_python_executable()
 
     try:
-
-        # The current github_scanner.py asks for
-        # the repository URL using input().
-        #
-        # We automatically provide the detected
-        # repository URL to it.
-
         result = subprocess.run(
             [
-                sys.executable,
-                scanner_file
+                py_exe,
+                scanner_file,
+                "--path",
+                project_path,
+                "--no-dashboard"
             ],
-            cwd=PROJECT_DIRECTORY,
-            input=repository_url + "\n",
+            cwd=SECURECI_DIRECTORY,
             text=True
         )
 
         print()
 
-        print("----------------------------------------------")
-
         if result.returncode == 0:
-
-            print("SecureCI scan completed successfully.")
-
+            print("----------------------------------------------")
+            print("SecureCI security scan completed.")
+            print("----------------------------------------------")
         else:
-
-            print(
-                "SecureCI scan finished with "
-                "an error."
-            )
-
-        print("----------------------------------------------")
+            print("----------------------------------------------")
+            print("SecureCI scan finished with an error.")
+            print("----------------------------------------------")
 
         return result.returncode
 
     except Exception as error:
-
         print()
         print("ERROR while running security scanner:")
         print(error)
-
         return 1
 
 
 def start_dashboard():
-
     print()
     print("----------------------------------------------")
-    print("STEP 2 — SECURECI DASHBOARD")
+    print("STEP 3 - SECURECI DASHBOARD")
     print("----------------------------------------------")
+    print()
 
     dashboard_file = os.path.join(
-        PROJECT_DIRECTORY,
+        SECURECI_DIRECTORY,
         "app",
         "app.py"
     )
 
     if not os.path.exists(dashboard_file):
-
         print()
         print("ERROR:")
         print("app/app.py was not found.")
-
         return None
 
-    print()
-    print("Starting SecureCI web dashboard...")
+    py_exe = get_python_executable()
 
     try:
+        print("Starting SecureCI dashboard...")
 
         dashboard_process = subprocess.Popen(
             [
-                sys.executable,
+                py_exe,
                 dashboard_file
             ],
-            cwd=PROJECT_DIRECTORY
+            cwd=SECURECI_DIRECTORY
         )
 
-        # Give Flask time to start
         time.sleep(3)
 
         print()
         print("Dashboard started successfully.")
-
         print()
         print("Opening:")
         print(DASHBOARD_URL)
 
-        webbrowser.open(
-            DASHBOARD_URL
-        )
+        webbrowser.open(DASHBOARD_URL)
 
         return dashboard_process
 
     except Exception as error:
-
         print()
         print("ERROR starting dashboard:")
         print(error)
-
         return None
 
 
 def main():
-
     print_banner()
 
-    print("SecureCI project:")
-    print(PROJECT_DIRECTORY)
-
+    print("SecureCI location:")
+    print(SECURECI_DIRECTORY)
     print()
 
-    # ==========================================
     # STEP 0
-    # ==========================================
-
     print("----------------------------------------------")
-    print("STEP 0 — REPOSITORY CHECK")
+    print("STEP 0 - SECURECI CHECK")
     print("----------------------------------------------")
 
-    if not check_git_repository():
-
-        print()
-        print(
-            "ERROR: This folder is not a Git repository."
-        )
-
-        print()
-        print(
-            "Run SecureCI from a Git project folder."
-        )
-
-        print()
-        print("Example:")
-        print(
-            "cd D:\\Projects\\MyProject"
-        )
-        print(
-            "python secureci.py"
-        )
-
+    if not check_scanner_files():
         sys.exit(1)
 
     print()
-    print("Git repository detected.")
+    print("SecureCI files verified.")
 
-    # ==========================================
-    # GET GITHUB REMOTE
-    # ==========================================
+    # STEP 1
+    project_path = get_project_path()
 
-    repository_url = get_git_remote()
-
-    if not repository_url:
-
-        print()
-        print(
-            "ERROR: No GitHub remote repository found."
-        )
-
-        print()
-        print(
-            "Make sure this project has a GitHub remote."
-        )
-
-        print()
-        print("Example:")
-        print(
-            "git remote add origin "
-            "https://github.com/user/project.git"
-        )
-
+    if project_path is None:
         sys.exit(1)
 
-    print()
-    print("GitHub repository:")
-    print(repository_url)
+    # STEP 2
+    scan_result = run_local_scan(project_path)
 
-    # ==========================================
-    # RUN SECURITY SCAN
-    # ==========================================
+    if scan_result != 0:
+        print()
+        print("WARNING:")
+        print("The security scan reported an error.")
+        print("Dashboard will still be started for inspection.")
+        print()
 
-    scan_result = run_security_scan(
-        repository_url
-    )
-
-    # ==========================================
-    # START DASHBOARD
-    # ==========================================
-
+    # STEP 3
     dashboard_process = start_dashboard()
 
     if dashboard_process is None:
-
         sys.exit(1)
 
-    # ==========================================
-    # FINAL STATUS
-    # ==========================================
-
+    # FINAL
     print()
-    print("==============================================")
-    print("        SECURECI IS RUNNING")
-    print("==============================================")
-
+    print("=" * 60)
+    print("              SECURECI IS RUNNING")
+    print("=" * 60)
     print()
-    print(
-        "Security scan completed."
-    )
-
+    print("Security scan completed.")
     print()
-    print(
-        "Dashboard:"
-    )
-
-    print(
-        DASHBOARD_URL
-    )
-
+    print("Dashboard:")
+    print(DASHBOARD_URL)
     print()
-    print(
-        "Keep this terminal open while using SecureCI."
-    )
-
+    print("Keep this terminal open.")
     print()
-    print(
-        "Press CTRL+C to stop SecureCI."
-    )
+    print("Press CTRL+C to stop SecureCI.")
+    print()
 
     try:
-
         dashboard_process.wait()
 
     except KeyboardInterrupt:
-
         print()
-        print(
-            "Stopping SecureCI..."
-        )
+        print("Stopping SecureCI...")
 
         dashboard_process.terminate()
 
-        print(
-            "SecureCI stopped."
-        )
+        print("SecureCI stopped.")
 
 
 if __name__ == "__main__":
-
     main()

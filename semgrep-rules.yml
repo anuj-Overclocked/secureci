@@ -1,16 +1,14 @@
 rules:
-
   - id: secureci-sql-injection-demo
-
     languages:
       - python
-
     message: >
       Potential SQL Injection vulnerability detected.
       User-controlled input is directly concatenated
       into a SQL query. Use a parameterized query instead.
-
     severity: ERROR
-
-    pattern: |
-      $QUERY = "SELECT * FROM users WHERE username = '" + $USERNAME
+    patterns:
+      - pattern-either:
+          - pattern: $QUERY = "SELECT * FROM users WHERE username = '" + $USERNAME + ...
+          - pattern: $QUERY = "SELECT * FROM users WHERE username = '" + $USERNAME
+          - pattern: cursor.execute("SELECT * FROM users WHERE username = '" + $USERNAME + ...)

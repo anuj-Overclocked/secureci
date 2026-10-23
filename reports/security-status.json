@@ -4,5 +4,5 @@
     "dependency_scan": "PASS",
     "dast": "PASS",
     "security_gate": "PASS",
-    "reason": "No critical security issues detected."
+    "reason": "No security issues detected."
 }

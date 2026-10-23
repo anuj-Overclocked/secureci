@@ -1,5 +1,17 @@
 title = "SecureCI Gitleaks Configuration"
 
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+    '''node_modules''',
+    '''\.venv''',
+    '''venv''',
+    '''\.git''',
+    '''__pycache__'''
+]
+
 [[rules]]
 id = "secureci-demo-secret"
 
