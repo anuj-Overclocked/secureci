@@ -1,8 +1,8 @@
 {
     "sast": "PASS",
-    "secret_scan": "PASS",
+    "secret_scan": "FAIL",
     "dependency_scan": "PASS",
     "dast": "PASS",
-    "security_gate": "PASS",
-    "reason": "No security issues detected."
+    "security_gate": "BLOCKED",
+    "reason": "1 security vulnerability issue(s) detected."
 }

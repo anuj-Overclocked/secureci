@@ -1,21 +1,53 @@
 import argparse
+import os
 import sys
 from pathlib import Path
 import github_scanner
 
 
-def scan_local_directory(project_directory):
-    project_directory = Path(project_directory).resolve()
-
-    if not project_directory.exists():
+def scan_local_directory(project_directory_input):
+    if not project_directory_input or not str(project_directory_input).strip():
         print()
-        print("ERROR: Project path does not exist.")
-        print(project_directory)
+        print("ERROR: Project path is required.")
         return None
 
-    if not project_directory.is_dir():
+    try:
+        project_directory = Path(str(project_directory_input).strip().strip('"')).resolve()
+    except Exception as error:
         print()
-        print("ERROR: The given path is not a folder.")
+        print(f"ERROR: Invalid project path: {error}")
+        return None
+
+    try:
+        if not project_directory.exists():
+            print()
+            print("ERROR: Project path does not exist.")
+            print(project_directory)
+            return None
+
+        if not project_directory.is_dir():
+            print()
+            print("ERROR: The given path is not a folder.")
+            print(project_directory)
+            return None
+
+        # Check for directory read permissions early
+        try:
+            os.listdir(project_directory)
+        except PermissionError:
+            print()
+            print("ERROR: Permission denied accessing project directory:")
+            print(project_directory)
+            return None
+
+    except PermissionError:
+        print()
+        print("ERROR: Permission denied accessing project directory:")
+        print(project_directory)
+        return None
+    except Exception as error:
+        print()
+        print(f"ERROR: Cannot access project directory: {error}")
         return None
 
     github_scanner.ensure_report_directory()
@@ -150,7 +182,7 @@ def main():
         args.project_path.strip().strip('"')
         if args.project_path
         else input(
-            "Enter local project path: "
+            "Enter the full path of the project you want to scan: "
         ).strip().strip('"')
     )
 

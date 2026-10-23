@@ -3,6 +3,7 @@ import subprocess
 import sys
 import time
 import webbrowser
+import github_scanner
 
 
 SECURECI_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -68,7 +69,7 @@ def get_project_path():
     print()
 
     project_path = input(
-        "Enter local project path: "
+        "Enter the full path of the project you want to scan: "
     ).strip().strip('"')
 
     if not project_path:
@@ -156,6 +157,14 @@ def start_dashboard():
     print("STEP 3 - SECURECI DASHBOARD")
     print("----------------------------------------------")
     print()
+
+    if github_scanner.is_dashboard_running():
+        print("SecureCI dashboard is already running.")
+        print()
+        print("Opening:")
+        print(DASHBOARD_URL)
+        webbrowser.open(DASHBOARD_URL)
+        return True
 
     dashboard_file = os.path.join(
         SECURECI_DIRECTORY,
@@ -252,21 +261,25 @@ def main():
     print("Dashboard:")
     print(DASHBOARD_URL)
     print()
-    print("Keep this terminal open.")
-    print()
-    print("Press CTRL+C to stop SecureCI.")
-    print()
 
-    try:
-        dashboard_process.wait()
-
-    except KeyboardInterrupt:
+    if isinstance(dashboard_process, subprocess.Popen):
+        print("Keep this terminal open.")
         print()
-        print("Stopping SecureCI...")
+        print("Press CTRL+C to stop SecureCI.")
+        print()
 
-        dashboard_process.terminate()
+        try:
+            dashboard_process.wait()
 
-        print("SecureCI stopped.")
+        except KeyboardInterrupt:
+            print()
+            print("Stopping SecureCI...")
+
+            dashboard_process.terminate()
+
+            print("SecureCI stopped.")
+    else:
+        print("Dashboard server is active.")
 
 
 if __name__ == "__main__":

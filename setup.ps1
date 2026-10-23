@@ -149,7 +149,10 @@ if (Test-Path $semgrepPath) {
 }
 else {
 
-    Write-Host "WARNING: Semgrep was not found." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "ERROR: Semgrep was not found in the virtual environment." -ForegroundColor Red
+    Write-Host "Try reinstalling dependencies: .\venv\Scripts\python.exe -m pip install -r requirements.txt"
+    exit 1
 }
 
 
@@ -168,7 +171,10 @@ if (Test-Path $pipAuditPath) {
 }
 else {
 
-    Write-Host "WARNING: pip-audit was not found." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "ERROR: pip-audit was not found in the virtual environment." -ForegroundColor Red
+    Write-Host "Try reinstalling dependencies: .\venv\Scripts\python.exe -m pip install -r requirements.txt"
+    exit 1
 }
 
 
@@ -189,11 +195,12 @@ if (Get-Command gitleaks -ErrorAction SilentlyContinue) {
 else {
 
     Write-Host ""
-    Write-Host "WARNING: Gitleaks was not found." -ForegroundColor Yellow
+    Write-Host "WARNING: Gitleaks was not found in your system PATH." -ForegroundColor Yellow
+    Write-Host "Install Gitleaks on Windows using:"
     Write-Host ""
-    Write-Host "Install Gitleaks separately using:"
+    Write-Host "    winget install --id Gitleaks.Gitleaks -e" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "winget install --id Gitleaks.Gitleaks -e"
+    Write-Host "After installation, close and reopen your terminal."
     Write-Host ""
 }
 
@@ -211,19 +218,24 @@ Write-Host ""
 Write-Host "SecureCI is ready to use." -ForegroundColor Green
 
 Write-Host ""
-Write-Host "Activate the virtual environment:"
-Write-Host ""
-Write-Host ".\venv\Scripts\Activate.ps1"
+Write-Host "1. Activate the virtual environment:"
+Write-Host "   .\venv\Scripts\Activate.ps1" -ForegroundColor Cyan
 
 Write-Host ""
-Write-Host "Scan a public GitHub repository:"
-Write-Host ""
-Write-Host "python github_scanner.py --repo-url https://github.com/USER/PROJECT.git"
+Write-Host "2. Scan a local project folder:"
+Write-Host "   python .\local_scanner.py" -ForegroundColor Cyan
 
 Write-Host ""
-Write-Host "Example:"
+Write-Host "   Or specify the project path directly:"
+Write-Host "   python .\local_scanner.py --path `"D:\Projects\MyApplication`"" -ForegroundColor Cyan
+
 Write-Host ""
-Write-Host "python github_scanner.py --repo-url https://github.com/pallets/flask.git"
+Write-Host "3. Or run the SecureCI runner:"
+Write-Host "   python .\secureci.py" -ForegroundColor Cyan
+
+Write-Host ""
+Write-Host "4. Or scan a public GitHub repository:"
+Write-Host "   python .\github_scanner.py --repo-url https://github.com/pallets/flask.git" -ForegroundColor Cyan
 
 Write-Host ""
 Write-Host "============================================================"

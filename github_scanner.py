@@ -1,7 +1,9 @@
 import argparse
+from datetime import datetime
 import json
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -164,6 +166,16 @@ def get_python_executable():
         if candidate.is_file():
             return str(candidate)
     return sys.executable
+
+
+def is_dashboard_running(host="127.0.0.1", port=5000):
+    """Check if the SecureCI dashboard is already listening on the configured port."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            return s.connect_ex((host, port)) == 0
+    except Exception:
+        return False
 
 
 def run_command(
@@ -1129,6 +1141,7 @@ def build_final_report(
     report = {
         "project": "SecureCI",
         "repository": repository_url,
+        "scan_time": datetime.now().strftime("%d %b %Y, %I:%M %p"),
         "scan_status": scan_status,
         "security_gate": security_gate,
         "scanner_status": {
@@ -1372,6 +1385,22 @@ def scan_repository(
 # ============================================================
 
 def start_dashboard():
+    dashboard_url = "http://127.0.0.1:5000"
+
+    import webbrowser
+
+    if is_dashboard_running():
+        print()
+        print("=" * 65)
+        print("SECURECI DASHBOARD IS ALREADY RUNNING")
+        print("=" * 65)
+        print()
+        print(f"Dashboard URL: {dashboard_url}")
+        print("Opening in default browser...")
+        print()
+        webbrowser.open(dashboard_url)
+        return True
+
     print()
     print_header("STARTING SECURECI DASHBOARD")
 
@@ -1390,7 +1419,6 @@ def start_dashboard():
 
     try:
         import time
-        import webbrowser
 
         print("Starting Flask dashboard...")
 
@@ -1406,8 +1434,6 @@ def start_dashboard():
 
         # Give Flask time to start.
         time.sleep(2)
-
-        dashboard_url = "http://127.0.0.1:5000"
 
         print()
         print("Dashboard started successfully.")
